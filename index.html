@@ -7,79 +7,71 @@
 <style>
 
 body{
-    font-family: Arial;
-    background:#121212;
-    color:#e4e4e4;
-    margin:40px;
+font-family:Arial;
+background:#121212;
+color:#e4e4e4;
+margin:40px;
 }
 
 .container{
-    max-width:900px;
-    margin:auto;
-    background:#1e1e1e;
-    padding:30px;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,0.6);
+max-width:900px;
+margin:auto;
+background:#1e1e1e;
+padding:30px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.6);
 }
 
 textarea{
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    margin-bottom:15px;
-    background:#2a2a2a;
-    color:#ffffff;
-    border:1px solid #444;
-    border-radius:6px;
+width:100%;
+padding:10px;
+margin-top:10px;
+margin-bottom:15px;
+background:#2a2a2a;
+color:#ffffff;
+border:1px solid #444;
+border-radius:6px;
 }
 
 textarea:focus{
-    outline:none;
-    border-color:#6aa9ff;
+outline:none;
+border-color:#6aa9ff;
 }
 
 button{
-    padding:10px 20px;
-    margin-right:10px;
-    cursor:pointer;
-    border:none;
-    border-radius:6px;
-    background:#2f6fed;
-    color:white;
-    font-weight:bold;
-
-    transition: background 0.25s, transform 0.1s;
+padding:10px 20px;
+margin-right:10px;
+cursor:pointer;
+border:none;
+border-radius:6px;
+background:#2f6fed;
+color:white;
+font-weight:bold;
+transition: background 0.25s;
 }
 
 button:hover{
-    background:#1f56c5;
+background:#1f56c5;
 }
 
 .result{
-    white-space:pre-line;
-    background:#2a2a2a;
-    padding:15px;
-    border:1px solid #444;
-    border-radius:6px;
+white-space:pre-line;
+background:#2a2a2a;
+padding:15px;
+border:1px solid #444;
+border-radius:6px;
 }
 
 ul{
-    padding-left:20px;
+padding-left:20px;
 }
 
 li{
-    margin-bottom:4px;
-}
-
-h2,h3{
-    color:#ffffff;
-}
-
-p{
-    color:#cfcfcf;
+margin-bottom:4px;
 }
 
 </style>
+</head>
 
 <body>
 
@@ -93,55 +85,35 @@ p{
 
 <textarea id="entrada" rows="12"></textarea>
 
-<br>
-
 <button onclick="gerar()">Gerar Evolução</button>
 <button id="botaoCopiar" onclick="copiar()">Copiar texto</button>
 
 <h3>Texto gerado</h3>
-
 <div id="saida" class="result"></div>
 
 <h3>Medicamentos identificados</h3>
-
 <ul id="lista"></ul>
 
 </div>
 
 <script>
 
-const medicacoesControladas = new Set([
-"AMITRIPTILINA",
-"BIPERIDENO",
-"CARBAMAZEPINA",
-"CARBONATO",
-"CLONAZEPAM",
-"CLORPROMAZINA",
-"DIAZEPAM",
-"FENITOINA",
-"FENOBARBITAL",
-"FLUOXETINA",
-"HALOPERIDOL",
-"IMIPRAMINA",
-"LEVOMEPROMAZINA",
-"METILFENIDATO",
-"MORFINA",
-"RISPERIDONA",
+const controlados = new Set([
+"AMITRIPTILINA","BIPERIDENO","CARBAMAZEPINA","CARBONATO",
+"CLONAZEPAM","CLORPROMAZINA","DIAZEPAM","FENITOINA",
+"FENOBARBITAL","FLUOXETINA","HALOPERIDOL","IMIPRAMINA",
+"LEVOMEPROMAZINA","METILFENIDATO","MORFINA","RISPERIDONA",
 "SERTRALINA"
 ]);
 
-const medicacoesAgudas = new Set([
-"DIPIRONA",
-"PARACETAMOL",
-"IBUPROFENO",
-"AMOXICILINA",
-"AZITROMICINA",
-"MIKANIA"
+const agudos = new Set([
+"DIPIRONA","PARACETAMOL","IBUPROFENO",
+"AMOXICILINA","AZITROMICINA","MIKANIA"
 ]);
 
-function normalizarNome(nome){
+function normalizar(txt){
 
-return nome
+return txt
 .toUpperCase()
 .normalize("NFD")
 .replace(/[\u0300-\u036f]/g,"");
@@ -158,17 +130,10 @@ return parseInt(parseFloat(valor));
 function extrairDados(texto){
 
 let dados={
-paciente:"Não identificado",
 profissional:"____________",
 data_prescricao:"____________",
 medicamentos:[]
 };
-
-let paciente = texto.match(/Paciente\s*\n?\(\d+\)\s*([A-ZÁ-Ú\s]+)/);
-
-if(paciente){
-dados.paciente = paciente[1].trim();
-}
 
 let profissional = texto.match(/Profissional\s*\n?([A-ZÁ-Ú\s]+)×/);
 
@@ -193,14 +158,12 @@ let linhas = blocos[i]
 
 if(linhas.length < 7) continue;
 
-let nomeOriginal = linhas[0];
+let nome = linhas[0];
 let unidade = linhas[1];
 
-const unidadesValidas = ["CP","FR","AMP","TB","ML","G"];
+const unidadesValidas=["CP","FR","AMP","TB","ML","G"];
 
-if(!unidadesValidas.includes(unidade)){
-    continue;
-}
+if(!unidadesValidas.includes(unidade)) continue;
 
 let quantidade;
 
@@ -212,13 +175,12 @@ continue;
 
 let retorno = linhas[7] || "";
 
-let nomeNormalizado = normalizarNome(nomeOriginal);
-let principio = nomeNormalizado.split(" ")[0];
+let principio = normalizar(nome).split(" ")[0];
 
 dados.medicamentos.push({
-nome_original:nomeOriginal,
+nome:nome,
 principio:principio,
-texto:`${quantidade} ${unidade} ${nomeOriginal}`,
+texto:`${quantidade} ${unidade} ${nome}`,
 retorno:retorno
 });
 
@@ -234,38 +196,31 @@ let texto = document.getElementById("entrada").value;
 
 let dados = extrairDados(texto);
 
-let listaMeds = dados.medicamentos.map(m=>m.texto);
+let listaMeds = dados.medicamentos.map(m=>"• "+m.texto);
 
-let controlados=[];
+let controladosLista=[];
 let continuos=[];
 
 dados.medicamentos.forEach(m=>{
 
-let principio = m.principio;
-let retorno = m.retorno;
+if(!/\d{2}\/\d{2}\/\d{4}/.test(m.retorno)) return;
 
-if(!/\d{2}\/\d{2}\/\d{4}/.test(retorno)) return;
-
-if(medicacoesControladas.has(principio)){
-
-controlados.push(`${m.nome_original} em ${retorno}`);
-
-}else if(!medicacoesAgudas.has(principio)){
-
-continuos.push(retorno);
-
+if(controlados.has(m.principio)){
+controladosLista.push(`• ${m.nome} em ${m.retorno}`);
+}
+else if(!agudos.has(m.principio)){
+continuos.push(m.retorno);
 }
 
 });
 
 let textoRetorno="";
 
-if(controlados.length){
+if(controladosLista.length){
 
 textoRetorno +=
 "\nMedicamentos de uso controlado com previsão de nova dispensação com nova receita médica a partir de:\n"
-+controlados.map(x=>"• "+x).join("\n")
-+"\n";
++controladosLista.join("\n");
 
 }
 
@@ -286,7 +241,7 @@ String(menor.getMonth()+1).padStart(2,"0")+"/"+
 menor.getFullYear();
 
 textoRetorno +=
-`\nMedicamentos de uso contínuo com previsão de nova dispensação a partir de ${menorFormatado}.`;
+`\n\nMedicamentos de uso contínuo com previsão de nova dispensação a partir de ${menorFormatado}.`;
 
 }
 
@@ -298,8 +253,7 @@ ${listaMeds.join("\n")}
 
 Receita prescrita por ${dados.profissional} em ${dados.data_prescricao}.
 
-Orientado quanto ao uso correto das medicações.
-${textoRetorno}`;
+Orientado quanto ao uso correto das medicações.${textoRetorno}`;
 
 document.getElementById("saida").textContent = textoFinal;
 
@@ -323,12 +277,12 @@ let botao = document.getElementById("botaoCopiar");
 
 navigator.clipboard.writeText(texto).then(()=>{
 
-botao.textContent = "Copiado ✓";
-botao.style.background = "#2e7d32";
+botao.textContent="Copiado ✓";
+botao.style.background="#2e7d32";
 
 setTimeout(()=>{
-botao.textContent = "Copiar texto";
-botao.style.background = "#2f6fed";
+botao.textContent="Copiar texto";
+botao.style.background="#2f6fed";
 },2000);
 
 });
