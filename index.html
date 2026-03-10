@@ -1,268 +1,337 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Gerador de Evolução</title>
+<title>Gerador de Evolução de Dispensação</title>
 
 <style>
 
 body{
-background:#121212;
-color:#e4e4e4;
-font-family:Arial;
-max-width:900px;
-margin:auto;
-padding:30px;
+    font-family: Arial;
+    background:#121212;
+    color:#e4e4e4;
+    margin:40px;
 }
 
-h1{
-text-align:center;
-margin-bottom:30px;
+.container{
+    max-width:900px;
+    margin:auto;
+    background:#1e1e1e;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.6);
 }
 
 textarea{
-width:100%;
-background:#1e1e1e;
-color:#e4e4e4;
-border:1px solid #333;
-border-radius:6px;
-padding:10px;
-font-size:14px;
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    margin-bottom:15px;
+    background:#2a2a2a;
+    color:#ffffff;
+    border:1px solid #444;
+    border-radius:6px;
+}
+
+textarea:focus{
+    outline:none;
+    border-color:#6aa9ff;
 }
 
 button{
-background:#2f6fed;
-border:none;
-padding:10px 18px;
-margin:5px;
-color:white;
-border-radius:6px;
-cursor:pointer;
-font-size:14px;
+    padding:10px 20px;
+    margin-right:10px;
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    background:#2f6fed;
+    color:white;
+    font-weight:bold;
+
+    transition: background 0.25s, transform 0.1s;
 }
 
 button:hover{
-background:#1f5ad6;
+    background:#1f56c5;
 }
 
-.botoes{
-margin:15px 0;
+.result{
+    white-space:pre-line;
+    background:#2a2a2a;
+    padding:15px;
+    border:1px solid #444;
+    border-radius:6px;
 }
 
-.resultado{
-margin-top:20px;
+ul{
+    padding-left:20px;
 }
 
-.lista{
-margin-top:10px;
-background:#1e1e1e;
-padding:10px;
-border-radius:6px;
+li{
+    margin-bottom:4px;
+}
+
+h2,h3{
+    color:#ffffff;
+}
+
+p{
+    color:#cfcfcf;
 }
 
 </style>
-</head>
 
 <body>
 
-<h1>Gerador de Evolução de Dispensação</h1>
+<div class="container">
 
-<p>1. Ctrl+A na tela do Celk</p>
+<h2>Gerador de Evolução de Dispensação</h2>
+
+<p>1. Ctrl+A na tela da dispensação</p>
 <p>2. Ctrl+C</p>
-<p>3. Clique em <b>Colar do Celk</b></p>
+<p>3. Cole abaixo</p>
 
-<textarea id="entrada" rows="12" placeholder="Cole aqui o conteúdo copiado"></textarea>
+<textarea id="entrada" rows="12"></textarea>
 
-<div class="botoes">
+<br>
 
-<button onclick="colarDoClipboard()">Colar do Celk</button>
-<button onclick="gerarEvolucao()">Gerar evolução</button>
-<button id="btnCopiar" onclick="copiarTexto()">Copiar texto</button>
-
-</div>
-
-<div class="resultado">
+<button onclick="gerar()">Gerar Evolução</button>
+<button id="botaoCopiar" onclick="copiar()">Copiar texto</button>
 
 <h3>Texto gerado</h3>
 
-<textarea id="saida" rows="10"></textarea>
+<div id="saida" class="result"></div>
 
 <h3>Medicamentos identificados</h3>
 
-<div id="lista" class="lista"></div>
+<ul id="lista"></ul>
 
 </div>
 
 <script>
 
-const controlados = [
-"AMITRIPTILINA","BIPERIDENO","CARBAMAZEPINA","CARBONATO",
-"CLONAZEPAM","CLORPROMAZINA","DIAZEPAM","FENITOINA",
-"FENOBARBITAL","FLUOXETINA","HALOPERIDOL","IMIPRAMINA",
-"LEVOMEPROMAZINA","METILFENIDATO","MORFINA","RISPERIDONA",
+const medicacoesControladas = new Set([
+"AMITRIPTILINA",
+"BIPERIDENO",
+"CARBAMAZEPINA",
+"CARBONATO",
+"CLONAZEPAM",
+"CLORPROMAZINA",
+"DIAZEPAM",
+"FENITOINA",
+"FENOBARBITAL",
+"FLUOXETINA",
+"HALOPERIDOL",
+"IMIPRAMINA",
+"LEVOMEPROMAZINA",
+"METILFENIDATO",
+"MORFINA",
+"RISPERIDONA",
 "SERTRALINA"
-]
+]);
 
-const agudos = [
-"DIPIRONA","PARACETAMOL","IBUPROFENO",
-"AMOXICILINA","AZITROMICINA","MIKANIA"
-]
+const medicacoesAgudas = new Set([
+"DIPIRONA",
+"PARACETAMOL",
+"IBUPROFENO",
+"AMOXICILINA",
+"AZITROMICINA",
+"MIKANIA"
+]);
 
-function normalizar(txt){
+function normalizarNome(nome){
 
-return txt
+return nome
 .toUpperCase()
 .normalize("NFD")
-.replace(/[\u0300-\u036f]/g,"")
+.replace(/[\u0300-\u036f]/g,"");
 
 }
 
-function gerarEvolucao(){
+function limparQuantidade(valor){
 
-const texto = document.getElementById("entrada").value
-
-const linhas = texto.split("\n")
-
-let medicamentos=[]
-let profissional=""
-let data=""
-
-for(let i=0;i<linhas.length;i++){
-
-const l=linhas[i].trim()
-
-if(l.includes("Profissional")){
-profissional=linhas[i+1].replace("×","").trim()
-}
-
-if(l.includes("Data da Prescrição")){
-data=linhas[i+1].trim()
-}
-
-if(l.match(/\(\s*\d+\s*\)/)){
-
-const nome=linhas[i].replace(/\(.*\)/,"").trim()
-
-const unidade=linhas[i+1]?.trim()
-
-const quantidade=linhas[i+6]?.replace(",",".").trim()
-
-const retorno=linhas[i+8]?.trim()
-
-if(!isNaN(parseFloat(quantidade))){
-
-medicamentos.push({
-nome:nome,
-principio:normalizar(nome).split(" ")[0],
-texto:parseInt(quantidade)+" "+unidade+" "+nome,
-retorno:retorno
-})
+valor = valor.replace(/\./g,"").replace(",",".");
+return parseInt(parseFloat(valor));
 
 }
 
+function extrairDados(texto){
+
+let dados={
+paciente:"Não identificado",
+profissional:"____________",
+data_prescricao:"____________",
+medicamentos:[]
+};
+
+let paciente = texto.match(/Paciente\s*\n?\(\d+\)\s*([A-ZÁ-Ú\s]+)/);
+
+if(paciente){
+dados.paciente = paciente[1].trim();
 }
 
+let profissional = texto.match(/Profissional\s*\n?([A-ZÁ-Ú\s]+)×/);
+
+if(profissional){
+dados.profissional = profissional[1].trim();
 }
 
-if(medicamentos.length===0){
-alert("Nenhum medicamento identificado")
-return
+let prescricao = texto.match(/Data da Prescrição\s*\n(\d{2}\/\d{2}\/\d{4})/);
+
+if(prescricao){
+dados.data_prescricao = prescricao[1];
 }
 
-let lista=""
+let blocos = texto.split(/\n\s*\(\s*\d+\s*\)\s*/);
 
-medicamentos.forEach(m=>{
-lista+="• "+m.texto+"\n"
-})
+for(let i=1;i<blocos.length;i++){
 
-let controladosLista=[]
-let continuoDatas=[]
+let linhas = blocos[i]
+.split("\n")
+.map(l=>l.trim())
+.filter(l=>l);
 
-medicamentos.forEach(m=>{
+if(linhas.length < 7) continue;
 
-if(!m.retorno.match(/\d{2}\/\d{2}\/\d{4}/)) return
+let nomeOriginal = linhas[0];
+let unidade = linhas[1];
 
-if(controlados.includes(m.principio)){
-controladosLista.push("• "+m.nome+" em "+m.retorno)
-}
-else if(!agudos.includes(m.principio)){
-continuoDatas.push(m.retorno)
-}
+const unidadesValidas = ["CP","FR","AMP","TB","ML","G"];
 
-})
-
-let textoFinal="Paciente comparece à farmácia para retirada de medicamentos.\n\n"
-
-textoFinal+="Foram dispensados:\n"+lista+"\n"
-
-textoFinal+=`Receita prescrita por ${profissional} em ${data}.\n\n`
-
-textoFinal+="Orientado quanto ao uso correto das medicações.\n\n"
-
-if(controladosLista.length){
-
-textoFinal+="Medicamentos de uso controlado com previsão de nova dispensação com nova receita médica a partir de:\n"
-
-controladosLista.forEach(c=>{
-textoFinal+=c+"\n"
-})
-
-textoFinal+="\n"
-
+if(!unidadesValidas.includes(unidade)){
+    continue;
 }
 
-if(continuoDatas.length){
-
-continuoDatas.sort()
-
-textoFinal+="Medicamentos de uso contínuo com previsão de nova dispensação a partir de "+continuoDatas[0]+"."
-
-}
-
-document.getElementById("saida").value=textoFinal
-
-const listaDiv=document.getElementById("lista")
-listaDiv.innerHTML=""
-
-medicamentos.forEach(m=>{
-listaDiv.innerHTML+="<div>"+m.texto+"</div>"
-})
-
-}
-
-async function colarDoClipboard(){
+let quantidade;
 
 try{
-
-const texto = await navigator.clipboard.readText()
-
-document.getElementById("entrada").value=texto
-
-gerarEvolucao()
-
+quantidade = limparQuantidade(linhas[6]);
 }catch{
+continue;
+}
 
-alert("Não foi possível acessar a área de transferência")
+let retorno = linhas[7] || "";
+
+let nomeNormalizado = normalizarNome(nomeOriginal);
+let principio = nomeNormalizado.split(" ")[0];
+
+dados.medicamentos.push({
+nome_original:nomeOriginal,
+principio:principio,
+texto:`${quantidade} ${unidade} ${nomeOriginal}`,
+retorno:retorno
+});
 
 }
 
+return dados;
+
 }
 
-function copiarTexto(){
+function gerar(){
 
-const saida=document.getElementById("saida")
-const botao=document.getElementById("btnCopiar")
+let texto = document.getElementById("entrada").value;
 
-saida.select()
-document.execCommand("copy")
+let dados = extrairDados(texto);
 
-botao.innerText="Copiado ✓"
-botao.style.background="#2e7d32"
+let listaMeds = dados.medicamentos.map(m=>m.texto);
+
+let controlados=[];
+let continuos=[];
+
+dados.medicamentos.forEach(m=>{
+
+let principio = m.principio;
+let retorno = m.retorno;
+
+if(!/\d{2}\/\d{2}\/\d{4}/.test(retorno)) return;
+
+if(medicacoesControladas.has(principio)){
+
+controlados.push(`${m.nome_original} em ${retorno}`);
+
+}else if(!medicacoesAgudas.has(principio)){
+
+continuos.push(retorno);
+
+}
+
+});
+
+let textoRetorno="";
+
+if(controlados.length){
+
+textoRetorno +=
+"\nMedicamentos de uso controlado com previsão de nova dispensação com nova receita médica a partir de:\n"
++controlados.map(x=>"• "+x).join("\n")
++"\n";
+
+}
+
+if(continuos.length){
+
+let datas = continuos.map(d=>{
+
+let [dia,mes,ano]=d.split("/");
+return new Date(ano,mes-1,dia);
+
+});
+
+let menor = new Date(Math.min(...datas));
+
+let menorFormatado =
+String(menor.getDate()).padStart(2,"0")+"/"+
+String(menor.getMonth()+1).padStart(2,"0")+"/"+
+menor.getFullYear();
+
+textoRetorno +=
+`\nMedicamentos de uso contínuo com previsão de nova dispensação a partir de ${menorFormatado}.`;
+
+}
+
+let textoFinal =
+`Paciente comparece à farmácia para retirada de medicamentos.
+
+Foram dispensados:
+${listaMeds.join("\n")}
+
+Receita prescrita por ${dados.profissional} em ${dados.data_prescricao}.
+
+Orientado quanto ao uso correto das medicações.
+${textoRetorno}`;
+
+document.getElementById("saida").textContent = textoFinal;
+
+let ul = document.getElementById("lista");
+ul.innerHTML="";
+
+dados.medicamentos.forEach(m=>{
+
+let li=document.createElement("li");
+li.textContent=m.texto;
+ul.appendChild(li);
+
+});
+
+}
+
+function copiar(){
+
+let texto = document.getElementById("saida").textContent;
+let botao = document.getElementById("botaoCopiar");
+
+navigator.clipboard.writeText(texto).then(()=>{
+
+botao.textContent = "Copiado ✓";
+botao.style.background = "#2e7d32";
 
 setTimeout(()=>{
-botao.innerText="Copiar texto"
-botao.style.background="#2f6fed"
-},2000)
+botao.textContent = "Copiar texto";
+botao.style.background = "#2f6fed";
+},2000);
+
+});
 
 }
 
