@@ -141,14 +141,13 @@ function limparQuantidade(valor){
 }
 
 function extrairDados(texto){
-    let dados = {
-        paciente:"Não identificado",
-        profissional:"____________",
-        data_prescricao:"____________",
-        medicamentos:[]
+    let dados = { 
+        paciente:"Não identificado", 
+        profissional:"____________", 
+        data_prescricao:"____________", 
+        medicamentos:[] 
     };
 
-    // Regex atualizada para garantir a captura correta do paciente mesmo com nomes complexos
     let paciente = texto.match(/Paciente\s*\n?\(\d+\)\s*([^\n]+)/);
     if(paciente) dados.paciente = paciente[1].trim();
 
@@ -162,48 +161,47 @@ function extrairDados(texto){
 
     for(let i = 1; i < blocos.length; i++){
         let linhas = blocos[i].split("\n").map(l => l.trim()).filter(l => l);
-
-        // Se o bloco for muito curto, ignoramos
+        
         if(linhas.length < 5) continue;
 
         let nomeOriginal = linhas[0];
         let unidade = linhas[1];
+        
+        // LISTA DE UNIDADES AMPLIADA PARA NÃO DAR ERRO NOVAMENTE
+        const unidadesValidas = [
+            "CP", "CAP", "FR", "AMP", "TB", "ML", "G", "MG", 
+            "UN", "ENV", "CX", "PCT", "VD", "FA", "BGO", "SER", "GTS"
+        ];
 
-        // Adicionadas algumas unidades extras por segurança
-        const unidadesValidas = ["CP","FR","AMP","TB","ML","G","UN","ENV","CX","PCT"];
-
+        // Se a unidade extraída não estiver na lista, ele pula o bloco ignorando.
         if(!unidadesValidas.includes(unidade.toUpperCase())) continue;
 
         let quantidade = null;
         let retorno = "";
 
-        // Busca Dinâmica: Em vez de usar linhas fixas [6] e [7], procuramos de baixo para cima
         for (let j = linhas.length - 1; j >= 2; j--) {
             let val = linhas[j];
 
-            // Localiza a data de retorno (se houver)
             if (!retorno && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
                 retorno = val;
                 continue;
             }
 
-            // Localiza a quantidade dispensada (o último valor numérico antes do final/data)
             if (quantidade === null && /^\d+([.,]\d+)?$/.test(val)) {
                 quantidade = limparQuantidade(val);
-                break; // Quando acha a quantidade, para a busca
+                break;
             }
         }
 
-        // Se não conseguiu extrair a quantidade, pula (evita erros fatais)
         if (quantidade === null) continue;
 
         let nomeNormalizado = normalizarNome(nomeOriginal);
         let principio = nomeNormalizado.split(" ")[0];
 
         dados.medicamentos.push({
-            nome_original: nomeOriginal,
-            principio: principio,
-            texto: `${quantidade} ${unidade} ${nomeOriginal}`,
+            nome_original: nomeOriginal, 
+            principio: principio, 
+            texto: `${quantidade} ${unidade} ${nomeOriginal}`, 
             retorno: retorno
         });
     }
@@ -214,8 +212,7 @@ function gerar(){
     let texto = document.getElementById("entrada").value;
     let dados = extrairDados(texto);
     let listaMeds = dados.medicamentos.map(m=>m.texto);
-
-    // Se não encontrou medicamentos, avisa
+    
     if(listaMeds.length === 0) {
         document.getElementById("saida").textContent = "Nenhum medicamento reconhecido. Verifique se copiou todo o texto da tela.";
         document.getElementById("lista").innerHTML = "";
@@ -285,10 +282,10 @@ function copiar(){
 
 async function processarTudo() {
     const btnMagico = document.getElementById("btnMagico");
-
+    
     try {
         const textoCopiado = await navigator.clipboard.readText();
-
+        
         if (!textoCopiado.trim()) {
             alert("A área de transferência está vazia. Copie os dados do paciente primeiro.");
             return;
@@ -298,7 +295,7 @@ async function processarTudo() {
         gerar();
 
         const textoGerado = document.getElementById("saida").textContent;
-
+        
         if (textoGerado && !textoGerado.includes("Nenhum medicamento reconhecido")) {
             await navigator.clipboard.writeText(textoGerado);
             btnMagico.textContent = "Processado e Copiado! ✓";
@@ -307,7 +304,7 @@ async function processarTudo() {
             btnMagico.textContent = "Falha ao extrair dados";
             btnMagico.style.background = "#d32f2f";
         }
-
+        
         setTimeout(()=>{
             btnMagico.textContent = "🪄 Colar, Gerar e Copiar (Tudo em 1 Clique)";
             btnMagico.style.background = "#00897b";
