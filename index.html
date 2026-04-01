@@ -141,20 +141,19 @@ const medicacoesAgudas = new Set([
 "SULFAMETOXAZOL", "NITROFURANTOINA"
 ]);
 
-// NOVO: Dicionário de conversão de unidades
 const mapaUnidades = {
-    "CP": "cp",
-    "CAP": "cp",
-    "FR": "fr",
-    "AMP": "amp",
-    "TB": "tb",
+    "CP": "comprimido(s)",
+    "CAP": "cápsula(s)",
+    "FR": "frasco(s)",
+    "AMP": "ampola(s)",
+    "TB": "tubo(s)",
     "ML": "ml",
     "G": "g",
     "MG": "mg",
-    "U": "uni",
-    "UN": "uni",
-    "ENV": "env",
-    "CX": "cx",
+    "U": "unidade(s)",
+    "UN": "unidade(s)",
+    "ENV": "envelope(s)",
+    "CX": "caixa(s)",
     "PCT": "pacote(s)",
     "VD": "vidro(s)",
     "FA": "frasco-ampola",
@@ -183,8 +182,16 @@ function extrairDados(texto){
     let paciente = texto.match(/Paciente\s*\n?\(\d+\)\s*([^\n]+)/);
     if(paciente) dados.paciente = paciente[1].trim();
 
-    let profissional = texto.match(/Profissional\s*\n?([^\n×]+)/);
-    if(profissional) dados.profissional = profissional[1].trim();
+    // --- NOVA LÓGICA DE EXTRAÇÃO DE PROFISSIONAL ---
+    let profSemVinculo = texto.match(/Profissional Sem Vínculo([A-ZÀ-Ÿ][^\n×]*)/i);
+    if (profSemVinculo) {
+        dados.profissional = profSemVinculo[1].trim();
+    } else {
+        let profNormal = texto.match(/Profissional\s*\n?([A-ZÀ-Ÿ][^\n×]*)/i);
+        if (profNormal && !profNormal[1].toUpperCase().includes("SEM VÍNCULO")) {
+            dados.profissional = profNormal[1].trim();
+        }
+    }
 
     let prescricao = texto.match(/Data da Prescrição\s*\n(\d{2}\/\d{2}\/\d{4})/);
     if(prescricao) dados.data_prescricao = prescricao[1];
@@ -199,12 +206,9 @@ function extrairDados(texto){
         let nomeOriginal = linhas[0];
         let unidadeBruta = linhas[1].toUpperCase();
         
-        // Verifica se a unidade extraída existe no nosso mapa
         if(!mapaUnidades[unidadeBruta]) continue;
 
-        // Puxa o nome convertido (ex: "CP" vira "comprimido(s)")
         let unidadeConvertida = mapaUnidades[unidadeBruta];
-
         let quantidade = null;
         let retorno = "";
 
