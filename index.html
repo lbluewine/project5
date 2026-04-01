@@ -2,9 +2,8 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Gerador de Evolução de Dispensação</title>
+<title>Gerador de Evolução</title>
 
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z94VEBJLKH"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -14,8 +13,6 @@
   gtag('config', 'G-Z94VEBJLKH');
 </script>
 
-
-    
 <style>
 body{
     font-family: Arial;
@@ -107,14 +104,11 @@ p{
 
 <div class="container">
 
-<h2>Gerador de Evolução de Dispensação</h2>
+<h2>1. Ctrl+A + Ctrl+C na tela da dispensação | 2. Clique no gerar evolução</h2>
 
-<button id="btnMagico" onclick="processarTudo()">🪄 Colar, Gerar e Copiar (Tudo em 1 Clique)</button>
+<button id="btnMagico" onclick="processarTudo()">Gerar Evolução</button>
 
 <hr style="border: 1px solid #333; margin-bottom: 20px;">
-
-<p><strong>Modo Manual:</strong></p>
-<p>1. Ctrl+A na tela da dispensação | 2. Ctrl+C | 3. Cole abaixo</p>
 
 <textarea id="entrada" rows="6"></textarea>
 
@@ -133,15 +127,41 @@ p{
 
 <script>
 const medicacoesControladas = new Set([
-"AMITRIPTILINA", "BIPERIDENO", "CARBAMAZEPINA", "CARBONATO",
+"AMITRIPTILINA", "BIPERIDENO", "CARBAMAZEPINA", "LITIO",
 "CLONAZEPAM", "CLORPROMAZINA", "DIAZEPAM", "FENITOINA",
 "FENOBARBITAL", "FLUOXETINA", "HALOPERIDOL", "IMIPRAMINA",
 "LEVOMEPROMAZINA", "METILFENIDATO", "MORFINA", "RISPERIDONA", "SERTRALINA"
 ]);
 
 const medicacoesAgudas = new Set([
-"DIPIRONA", "PARACETAMOL", "IBUPROFENO", "AMOXICILINA", "AZITROMICINA", "MIKANIA"
+"DIPIRONA", "PARACETAMOL", "IBUPROFENO", "ACETILCISTEINA", "CALCIO", "DEXAMETASONA", "ACICLOVIR", "DICLOFENACO", 
+"FLUCONAZOL", "IVERMECTINA", "NEOMICINA","LIDOCAINA", "METOCLOPRAMIDA", "PERMETRINA", "SAIS",
+"AMOXICILINA", "AZITROMICINA", "MIKANIA", "CEFALEXINA",
+"AMOXICILINA", "BENZILPENICILINA", "CLARITROMICINA", "CIPROFLOXACINO", "CEFITRIAXONA", "METRONIDAZOL",
+"SULFAMETOXAZOL", "NITROFURANTOINA"
 ]);
+
+// NOVO: Dicionário de conversão de unidades
+const mapaUnidades = {
+    "CP": "cp",
+    "CAP": "cp",
+    "FR": "fr",
+    "AMP": "amp",
+    "TB": "tb",
+    "ML": "ml",
+    "G": "g",
+    "MG": "mg",
+    "U": "uni",
+    "UN": "uni",
+    "ENV": "env",
+    "CX": "cx",
+    "PCT": "pacote(s)",
+    "VD": "vidro(s)",
+    "FA": "frasco-ampola",
+    "BGO": "bisnaga(s)",
+    "SER": "seringa(s)",
+    "GTS": "gotas"
+};
 
 function normalizarNome(nome){
     return nome.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -177,16 +197,13 @@ function extrairDados(texto){
         if(linhas.length < 5) continue;
 
         let nomeOriginal = linhas[0];
-        let unidade = linhas[1];
+        let unidadeBruta = linhas[1].toUpperCase();
         
-        // LISTA DE UNIDADES AMPLIADA PARA NÃO DAR ERRO NOVAMENTE
-        const unidadesValidas = [
-            "CP", "CAP", "FR", "AMP", "TB", "ML", "G", "MG", 
-            "UN", "ENV", "CX", "PCT", "VD", "FA", "BGO", "SER", "GTS"
-        ];
+        // Verifica se a unidade extraída existe no nosso mapa
+        if(!mapaUnidades[unidadeBruta]) continue;
 
-        // Se a unidade extraída não estiver na lista, ele pula o bloco ignorando.
-        if(!unidadesValidas.includes(unidade.toUpperCase())) continue;
+        // Puxa o nome convertido (ex: "CP" vira "comprimido(s)")
+        let unidadeConvertida = mapaUnidades[unidadeBruta];
 
         let quantidade = null;
         let retorno = "";
@@ -213,7 +230,7 @@ function extrairDados(texto){
         dados.medicamentos.push({
             nome_original: nomeOriginal, 
             principio: principio, 
-            texto: `${quantidade} ${unidade} ${nomeOriginal}`, 
+            texto: `${quantidade} ${unidadeConvertida} de ${nomeOriginal}`, 
             retorno: retorno
         });
     }
@@ -318,7 +335,7 @@ async function processarTudo() {
         }
         
         setTimeout(()=>{
-            btnMagico.textContent = "🪄 Colar, Gerar e Copiar (Tudo em 1 Clique)";
+            btnMagico.textContent = "Gerar Evolução";
             btnMagico.style.background = "#00897b";
         }, 2500);
 
